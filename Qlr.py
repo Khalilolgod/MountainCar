@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 import random
-
+import matplotlib.pyplot as plt
 #making the enviroment 
 env = gym.make("MountainCar-v0")
 
@@ -11,14 +11,19 @@ learning_rate = 0.1
 # determones the importance of the future rewards
 discount = 0.95
 # you already know this one
-episodes = 25000
+episodes = 15000
+
+every_ep = 500
 # the amount of randomness
 # which alows us to explore the enviroment
 epsilon = 0.5
 
-start_epsilon = 1
-end_epsilon = episodes // 2
+start_epsilon = 1 
+end_epsilon =episodes//2
 epsilon_decay = epsilon / (end_epsilon - start_epsilon)
+
+rewards = []
+debug_dic = {'ep' : [] , 'avg' : [] ,'min' : [] , 'max' : [] }
 
 #each states features are gonna be descreted
 descrete_os_size = [20] * len(env.observation_space.high)
@@ -38,9 +43,9 @@ for episode in range(episodes):
     current_d_state = get_discrete_state(env.reset())
     done = False 
     render = False
-
+    rwd = 0
     # for every 500 episodes the will be one render 
-    if (episode % 1000 == 0):
+    if (episode % 2000 == 0):
         render = True
 
     while not done:
@@ -54,6 +59,8 @@ for episode in range(episodes):
         new_state,reward,done , _ = env.step(action)
         new_d_state = get_discrete_state(new_state)
         
+        rwd += reward 
+
         if render:
             env.render()
         
@@ -72,9 +79,25 @@ for episode in range(episodes):
         
         current_d_state = new_d_state
     
-    if end_epsilon > epsilon >= start_epsilon:
+    if end_epsilon > episode >= start_epsilon:
         epsilon -= epsilon_decay
+
+    rewards.append(rwd)
+
+    if episode%every_ep == 0:
+        avg = sum(rewards[-every_ep:]) / len(rewards[-every_ep:])
+        debug_dic['avg'].append(avg)
+        debug_dic['ep'].append(episode)
+        debug_dic['min'].append(min(rewards[-every_ep:]))
+        debug_dic['max'].append(max(rewards[-every_ep:]))
+
 env.close()
+
+plt.plot( debug_dic['ep'] , debug_dic['avg'] , label = "avg" )
+plt.plot( debug_dic['ep'] , debug_dic['min'] , label = "min" )
+plt.plot( debug_dic['ep'] , debug_dic['max'] , label = "max" )
+plt.legend()
+plt.show()
 
 #sources : https://en.wikipedia.org/wiki/Q-learning#Influence_of_variables
 # and : https://www.youtube.com/watch?v=Gq1Azv_B4-4
